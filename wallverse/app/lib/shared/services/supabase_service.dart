@@ -11,4 +11,13 @@ class SupabaseService {
   }
 
   static SupabaseClient get client => Supabase.instance.client;
+
+  static User? get currentUser {
+    if (!isConfigured) return null;
+    return client.auth.currentUser;
+  }
+
+  static Stream<AuthState> get authStateChanges {
+    return client.auth.onAuthStateChange;
+  }
 }

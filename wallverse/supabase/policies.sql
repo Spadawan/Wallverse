@@ -29,6 +29,10 @@ create policy "Profiles are public"
 on public.profiles for select
 using (true);
 
+create policy "Users can insert own profile"
+on public.profiles for insert
+with check (id = auth.uid());
+
 create policy "Users can update own profile"
 on public.profiles for update
 using (id = auth.uid())
@@ -217,3 +221,39 @@ with check (auth.uid() is null or user_id = auth.uid());
 create policy "Users can see own downloads"
 on public.downloads for select
 using (user_id = auth.uid() or public.is_moderator_or_admin());
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'wallpapers-original',
+  'wallpapers-original',
+  true,
+  4194304,
+  array['image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+create policy "Public wallpaper originals are readable"
+on storage.objects for select
+using (bucket_id = 'wallpapers-original');
+
+create policy "Users can upload own wallpaper originals"
+on storage.objects for insert
+with check (
+  bucket_id = 'wallpapers-original'
+  and auth.uid() is not null
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+create policy "Users can update own wallpaper originals"
+on storage.objects for update
+using (
+  bucket_id = 'wallpapers-original'
+  and (storage.foldername(name))[1] = auth.uid()::text
+)
+with check (
+  bucket_id = 'wallpapers-original'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);

@@ -42,9 +42,9 @@ class Wallpaper {
       title: map['title'] ?? '',
       imageUrl: map['image_url'] ?? '',
       thumbnailUrl: map['thumbnail_url'] ?? map['image_url'] ?? '',
-      username: map['username'] ?? 'unknown',
+      username: _usernameFromMap(map),
       category: map['category'] ?? 'Uncategorized',
-      tags: List<String>.from(map['tags'] ?? const []),
+      tags: _tagsFromMap(map),
       width: map['width'] ?? 0,
       height: map['height'] ?? 0,
       fileSize: map['file_size'] ?? 0,
@@ -54,5 +54,25 @@ class Wallpaper {
       isSuggestive: map['is_suggestive'] ?? false,
       status: map['status'] ?? 'pending',
     );
+  }
+
+  static String _usernameFromMap(Map<String, dynamic> map) {
+    final profile = map['profiles'];
+    if (profile is Map && profile['username'] != null) return profile['username'].toString();
+    if (map['username'] != null) return map['username'].toString();
+    return 'unknown';
+  }
+
+  static List<String> _tagsFromMap(Map<String, dynamic> map) {
+    if (map['tags'] is List) return List<String>.from(map['tags']);
+
+    final wallpaperTags = map['wallpaper_tags'];
+    if (wallpaperTags is! List) return const [];
+
+    return wallpaperTags.map((row) {
+      if (row is Map && row['tags'] is Map) return row['tags']['name']?.toString();
+      if (row is Map && row['name'] != null) return row['name'].toString();
+      return null;
+    }).whereType<String>().toList();
   }
 }
